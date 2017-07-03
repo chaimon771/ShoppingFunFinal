@@ -11,4 +11,7 @@
     <string name="facebook_login_protocol_scheme" translatable="false">fb1971428876409771</string>
     <string name="sign_out">Sign out</string>
 
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
 </resources>

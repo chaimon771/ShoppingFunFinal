@@ -1,12 +1,15 @@
 package example.haim.shoppingfun.models;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import com.google.firebase.auth.FirebaseUser;
 
 /**
  * Created by DELL e7440 on 22/06/2017.
  */
 
-public class User {
+public class User implements Parcelable {
     //Properties
     private String uid;
     private String displayName;
@@ -57,4 +60,36 @@ public class User {
                 ", profileImage='" + profileImage + '\'' +
                 '}';
     }
+
+
+    //Parcelable:
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+    //Write
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(this.uid);
+        dest.writeString(this.displayName);
+        dest.writeString(this.profileImage);
+    }
+    //Read:
+    protected User(Parcel in) {
+        this.uid = in.readString();
+        this.displayName = in.readString();
+        this.profileImage = in.readString();
+    }
+    //CREATOR:
+    public static final Parcelable.Creator<User> CREATOR = new Parcelable.Creator<User>() {
+        @Override
+        public User createFromParcel(Parcel source) {
+            return new User(source);
+        }
+
+        @Override
+        public User[] newArray(int size) {
+            return new User[size];
+        }
+    };
 }

@@ -29,6 +29,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 import butterknife.ButterKnife;
+import example.haim.shoppingfun.fragments.UserListFragment;
 import example.haim.shoppingfun.models.User;
 
 public class MainActivity extends AppCompatActivity
@@ -38,6 +39,41 @@ public class MainActivity extends AppCompatActivity
     private static final int RC_SIGN_IN = 1;
     FirebaseUser mUser;
     FirebaseAuth mAuth;
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        ButterKnife.bind(this);
+
+        mAuth = FirebaseAuth.getInstance();
+
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.setDrawerListener(toggle);
+        toggle.syncState();
+
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mAuth.addAuthStateListener(mAuthListener);
+        sha1();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mAuth.removeAuthStateListener(mAuthListener);
+    }
 
     void sha1() {
         try {
@@ -54,17 +90,35 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        mAuth.addAuthStateListener(mAuthListener);
-        sha1();
-    }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        mAuth.removeAuthStateListener(mAuthListener);
+    FirebaseAuth.AuthStateListener mAuthListener = new FirebaseAuth.AuthStateListener() {
+        @Override
+        public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+            mUser = firebaseAuth.getCurrentUser();
+            if (mUser == null) {
+                startActivityForResult(
+                        AuthUI.getInstance().createSignInIntentBuilder().setAvailableProviders(
+                                Arrays.asList(
+                                        new AuthUI.IdpConfig.Builder(AuthUI.EMAIL_PROVIDER).build(),
+                                        new AuthUI.IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER).build(),
+                                        new AuthUI.IdpConfig.Builder(AuthUI.FACEBOOK_PROVIDER).build()
+                                )
+                        )
+                                .build(),
+                        RC_SIGN_IN);
+            } else {
+                //when we have a user - already logged in or success log-in -> initWithuser by login
+                initWithUser();
+            }
+        }
+    };
+
+    //We Have a user! -> success Log In / Sign Up.
+    private void initWithUser() {
+        getSupportFragmentManager().
+                beginTransaction().
+                replace(R.id.container, new UserListFragment()).
+                commit();
     }
 
 
@@ -72,16 +126,16 @@ public class MainActivity extends AppCompatActivity
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-            //gets all the extras into "response" object (Idp - Identity Provider) - parse the Intent into a specialized object
-            IdpResponse response = IdpResponse.fromResultIntent(data);
+        //gets all the extras into "response" object (Idp - Identity Provider) - parse the Intent into a specialized object
+        IdpResponse response = IdpResponse.fromResultIntent(data);
 
         //we receive this callback as a result for startActivityForResult - user have NO INTERNET
         if (requestCode == RC_SIGN_IN
                 && resultCode != RESULT_OK
                 && response != null
-                && response.getErrorCode() == ErrorCodes.UNKNOWN_ERROR){ //Result not Ok - we have a problem to sign in.
-                
-        }else if (resultCode == RESULT_OK && requestCode == RC_SIGN_IN){
+                && response.getErrorCode() == ErrorCodes.UNKNOWN_ERROR) { //Result not Ok - we have a problem to sign in.
+
+        } else if (resultCode == RESULT_OK && requestCode == RC_SIGN_IN) {
             //success Facebook sign in --> Save The User
             //save the user:
             FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -93,57 +147,8 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    FirebaseAuth.AuthStateListener mAuthListener = new FirebaseAuth.AuthStateListener() {
-        @Override
-        public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-            mUser = firebaseAuth.getCurrentUser();
-            if (mUser==null){
-                startActivityForResult(
-                        AuthUI.getInstance()
-                                .createSignInIntentBuilder()
-                                .setAvailableProviders(
-                                        Arrays.asList(new AuthUI.IdpConfig.Builder(AuthUI.EMAIL_PROVIDER).build(),
-                                                new AuthUI.IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER).build(),
-                                                new AuthUI.IdpConfig.Builder(AuthUI.FACEBOOK_PROVIDER).build()
-                                                        )
-                                                    )
-                                .build(),
-                        RC_SIGN_IN);
-            }else {
-                //when have no user - no sign in.
-                initWithUser();
-            }
-        }
-    };
-
-    //User already logged in!
-    private void initWithUser() {
-
-    }
 
 
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        ButterKnife.bind(this);
-
-        mAuth = FirebaseAuth.getInstance();
-
-
-
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.setDrawerListener(toggle);
-        toggle.syncState();
-
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
-    }
 
     @Override
     public void onBackPressed() {
